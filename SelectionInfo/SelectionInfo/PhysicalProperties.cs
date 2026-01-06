@@ -1,7 +1,7 @@
 using System;
 using Inventor;
 
-namespace SelectionInfo
+namespace SelectionInfo2
 {
     /// <summary>
     /// Provides information about the physical properties of parts and assemblies.

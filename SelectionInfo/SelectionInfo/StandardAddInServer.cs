@@ -1,9 +1,13 @@
+using Inventor;
 using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
-using Inventor;
+using static System.Net.Mime.MediaTypeNames;
+using System.Collections.Generic;
+using System.Linq;
 
-namespace SelectionInfo
+namespace SelectionInfo2
 {
     /// <summary>
     /// This is the primary AddIn Server class that implements the ApplicationAddInServer interface
@@ -22,6 +26,10 @@ namespace SelectionInfo
         private DockableWindow selectionInfoWnd;
         private PropertyGrid selectionPropertyGrid;
         private UserInputEvents userInputEvents;
+        ButtonDefinition goUpCmd;
+        ButtonDefinition goDownCmd;
+        private bool _suppressSelectionEvents;
+        private const string CategoryName = "000 SectionInfo Navigation";
 
         public StandardAddInServer()
         {
@@ -82,33 +90,86 @@ namespace SelectionInfo
         /// </summary>
         private void ShowSelected()
         {
+            
             var selectSet = inventor.ActiveDocument.SelectSet;
 
             switch (selectSet.Count)
             {
-                
+
                 case 0:
-                {
-                    ShowActiveDocument();
-                    break;
-                }
+                    {
+                        ShowActiveDocument();
+                        break;
+                    }
 
                 case 1:
-                {
-                    var entity = selectSet[1];
-                    ShowEntity(entity);
-                    break;
-                }
+                    {
+                        var entity = selectSet[1];
+                        ShowEntity(entity);
+                        break;
+                    }
 
                 default:
-                {
-                    ClearPalette();
-                    break;
-                }
+                    {
+                        ClearPalette();
+                        break;
+                    }
             }
 
         }
 
+        private List<ComponentOccurrence> navigationStack = new List<ComponentOccurrence>();
+        private void GoUpHierarchy()
+        {
+
+            _suppressSelectionEvents = true;
+            try
+            {
+                var selectSet = inventor.ActiveDocument.SelectSet;
+                if (selectSet.Count != 1)
+                    return;
+                
+                ComponentOccurrence occ = (ComponentOccurrence)selectSet[1];
+                if (!navigationStack.Any(o => o.Name == occ.Name))
+                {
+                    navigationStack.Add(occ);
+                }
+                if (occ.ParentOccurrence != null)
+                {
+                    selectSet.Clear();
+                    selectSet.Select(occ.ParentOccurrence);
+                }
+            }
+            finally
+            {
+                _suppressSelectionEvents = false;
+            }
+            ShowSelected();
+        }
+
+        
+        private void GoDownHierarchy()
+        {
+            _suppressSelectionEvents = true;
+
+
+            try
+            {
+                var selectSet = inventor.ActiveDocument.SelectSet;
+                if (selectSet.Count != 1) return;
+                if (navigationStack.Count <= 0) { return; }
+
+                ComponentOccurrence lastOcc = navigationStack.Last();
+                navigationStack.RemoveAt(navigationStack.Count - 1);
+                selectSet.Clear();
+                selectSet.Select(lastOcc);
+            }
+            finally
+            {
+                _suppressSelectionEvents = false;
+            }
+            ShowSelected();
+        }
 
 
         /// <summary>
@@ -153,6 +214,8 @@ namespace SelectionInfo
             ref ObjectCollection MoreSelectedEntities, SelectionDeviceEnum SelectionDevice, Point ModelPosition,
             Point2d ViewPosition, Inventor.View View)
         {
+            if (_suppressSelectionEvents) return;
+            navigationStack.Clear();
             ShowSelected();
         }
 
@@ -181,8 +244,9 @@ namespace SelectionInfo
         /// <summary>
         /// Handle when user deselects an item.
         /// </summary>
-         private void UserInputEvents_OnUnSelect(ObjectsEnumerator UnSelectedEntities, SelectionDeviceEnum SelectionDevice, Point ModelPosition, Point2d ViewPosition, Inventor.View View)
+        private void UserInputEvents_OnUnSelect(ObjectsEnumerator UnSelectedEntities, SelectionDeviceEnum SelectionDevice, Point ModelPosition, Point2d ViewPosition, Inventor.View View)
         {
+            if (_suppressSelectionEvents) return;
             ShowSelected();
         }
 
@@ -197,12 +261,14 @@ namespace SelectionInfo
         /// <param name="firstTime"></param>
         public void Activate(ApplicationAddInSite addInSiteObject, bool firstTime)
         {
+            Debug.WriteLine("Activate!");
+
             // Initialize AddIn members.
             inventor = addInSiteObject.Application;
 
             //Create dockable window
             selectionInfoWnd = inventor.UserInterfaceManager.DockableWindows.Add(ClientId,
-                "SelectionInfo.StandardAddInServer.selectionInfoWnd", "Selection");
+                "SelectionInfo.StandardAddInServer.selectionInfoWnd", "Selection2");
             selectionInfoWnd.ShowVisibilityCheckBox = true;
 
             //Create propertyGrid control
@@ -220,6 +286,124 @@ namespace SelectionInfo
             applicationEvents.OnActivateDocument += ApplicationEvents_OnActivateDocument;
             applicationEvents.OnDeactivateDocument += ApplicationEvents_OnDeactivateDocument;
             applicationEvents.OnDocumentChange += ApplicationEvents_OnDocumentChange;
+
+            CommandCategory cmdCat = GetOrCreateCategory(CategoryName);
+            goUpDefinition(firstTime, cmdCat);
+            goDownDefinition(firstTime, cmdCat);
+
+
+
+        }
+
+        private void goUpDefinition(bool firstTime, CommandCategory cmdCat)
+        {
+            try
+            {
+                goUpCmd = inventor.CommandManager.ControlDefinitions["GoUpHierarchy"] as ButtonDefinition;
+            }
+            catch (Exception ex) {
+                goUpCmd = inventor.CommandManager.ControlDefinitions.AddButtonDefinition("000 Go Up Hierarchy",
+                                                          "GoUpHierarchy",
+                                                          CommandTypesEnum.kEditMaskCmdType,
+                                                          ClientId,
+                                                          "Ribbon Demo",
+                                                          "SectionInfo Description",
+                                                          ButtonDisplayEnum.kDisplayTextInLearningMode);
+            }
+            
+
+            if (goUpCmd == null)
+                throw new InvalidOperationException("AddButtonDefinition did not return a ButtonDefinition");
+
+            cmdCat.Add(goUpCmd);
+
+            AddToRibbon(firstTime, goUpCmd);
+
+            goUpCmd.OnExecute += new ButtonDefinitionSink_OnExecuteEventHandler(goUpCmd_OnExecute);
+        }
+        void goUpCmd_OnExecute(NameValueMap Context)
+        {
+            GoUpHierarchy();
+        }
+        private void goDownDefinition(bool firstTime, CommandCategory cmdCat)
+        {
+            try
+            {
+                goDownCmd = inventor.CommandManager.ControlDefinitions["GoDownHierarchy"] as ButtonDefinition;
+            }
+            catch (Exception ex)
+            {
+                goDownCmd = inventor.CommandManager.ControlDefinitions.AddButtonDefinition("000 Go Down Hierarchy",
+                                                          "GoDownHierarchy",
+                                                          CommandTypesEnum.kEditMaskCmdType,
+                                                          ClientId,
+                                                          "Ribbon Demo2",
+                                                          "SectionInfo Description",
+                                                          ButtonDisplayEnum.kDisplayTextInLearningMode);
+            }
+
+
+            if (goDownCmd == null)
+                throw new InvalidOperationException("AddButtonDefinition did not return a ButtonDefinition");
+
+            cmdCat.Add(goDownCmd);
+
+            AddToRibbon(firstTime, goDownCmd);
+
+            goDownCmd.OnExecute += new ButtonDefinitionSink_OnExecuteEventHandler(goDownCmd_OnExecute);
+            //MessageBox.Show("CreateButtonDefinition");
+        }
+        void goDownCmd_OnExecute(NameValueMap Context)
+        {
+            //System.Windows.Forms.MessageBox.Show("GoUpHierarchyHandler", "SectionInfo2");
+            //MessageBox.Show("GoUpHierarchyHandler");
+            GoDownHierarchy();
+        }
+        private CommandCategory GetOrCreateCategory(string name)
+        {
+            try
+            {
+                return inventor.CommandManager.CommandCategories[name];
+            }
+            catch
+            {
+                return inventor.CommandManager.CommandCategories.Add(name, ClientId);
+            }
+        }
+
+        private void AddToRibbon(bool firstTime, ButtonDefinition buttonCommand) {
+            if (firstTime)
+            {
+                try
+                {
+                    if (inventor.UserInterfaceManager.InterfaceStyle == InterfaceStyleEnum.kRibbonInterface)
+                    {
+                        Ribbon ribbon = inventor.UserInterfaceManager.Ribbons["Assembly"];
+
+                        RibbonTab tab = ribbon.RibbonTabs["id_TabAssemble"];
+
+                        try
+                        {
+                            RibbonPanel panel = tab.RibbonPanels.Add("Section Info", "SelectionInfoPanel", ClientId, "", false);
+
+                            CommandControl control1 = panel.CommandControls.AddButton(buttonCommand, true, true, "", false);
+                        }
+                        catch (Exception ex)
+                        {
+                        }
+                    }
+                    else
+                    {
+                        CommandBar oCommandBar = inventor.UserInterfaceManager.CommandBars["PMxPartFeatureCmdBar"];
+                        oCommandBar.Controls.AddButton(buttonCommand);
+                    }
+                }
+                catch
+                {
+                    CommandBar oCommandBar = inventor.UserInterfaceManager.CommandBars["PMxPartFeatureCmdBar"];
+                    oCommandBar.Controls.AddButton(buttonCommand);
+                }
+            }
         }
 
         /// <summary>
@@ -243,10 +427,17 @@ namespace SelectionInfo
             // Release objects.
             applicationEvents = null;
             userInputEvents = null;
+
+            Marshal.ReleaseComObject(inventor);
             inventor = null;
 
-            GC.Collect();
+            Marshal.ReleaseComObject(goUpCmd);
+            goUpCmd = null;
+            Marshal.ReleaseComObject(goDownCmd);
+            goDownCmd = null;
+
             GC.WaitForPendingFinalizers();
+            GC.Collect();
         }
 
         public void ExecuteCommand(int commandID)

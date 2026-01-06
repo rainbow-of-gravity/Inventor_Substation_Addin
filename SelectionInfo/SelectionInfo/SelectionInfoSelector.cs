@@ -2,7 +2,7 @@ using System;
 using System.Windows.Forms;
 using Inventor;
 
-namespace SelectionInfo
+namespace SelectionInfo2
 {
     /// <summary>
     /// This class is responsible for taking the user-selected object and choosing

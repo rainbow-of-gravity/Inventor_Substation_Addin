@@ -1,7 +1,7 @@
 using System.ComponentModel;
 using Inventor;
 
-namespace SelectionInfo
+namespace SelectionInfo2
 {
     /// <summary>
     /// This class contains information about Document
@@ -23,7 +23,7 @@ namespace SelectionInfo
             physicalProperties = new PhysicalProperties(document);
         }
 
-        /// <summary>
+     /* /// <summary>
         /// Gets the model surface area in database units [cm2].
         /// </summary>
         /// <value>
@@ -49,19 +49,33 @@ namespace SelectionInfo
         /// </value>
         [Category("Physical")]
         [DisplayName("Mass [lb]")]
-        public double MassLb => physicalProperties.Mass("lb");
+        public double MassLb => physicalProperties.Mass("lb"); */
 
         /// <summary>
         /// Gets or sets the description iProperty value.
         /// </summary>
         /// <value>
-        /// The description.
+        /// The Vendor.
         /// </value>
         [Category("iProperties")]
-        public string Description
+        public string Vendor
         {
-            get => iProperties.Description;
-            set => iProperties.Description = value;
+            get => iProperties.Vendor;
+            set => iProperties.Vendor = value;
+        }
+
+        /// <summary>
+        /// Gets or sets the description iProperty value.
+        /// </summary>
+        /// <value>
+        /// The Category.
+        /// </value>
+        [Category("iProperties")]
+        public string Category
+        {
+            get => iProperties.Category;
+            set => iProperties.Category = value;
+            
         }
 
 
@@ -71,38 +85,11 @@ namespace SelectionInfo
         /// <value>
         /// The part number.
         /// </value>
-        [Category("iProperties")]
         [ReadOnly(true)]
         public string PartNumber
         {
             get => iProperties.PartNumber;
             set => iProperties.PartNumber = value;
-        }
-
-        /// <summary>
-        /// Gets or sets the title.
-        /// </summary>
-        /// <value>
-        /// The title.
-        /// </value>
-        [Category("iProperties")]
-        public string Title
-        {
-            get => iProperties.Title;
-            set => iProperties.Title = value;
-        }
-
-        /// <summary>
-        /// Gets or sets the user defined property. This is example usage.
-        /// </summary>
-        /// <value>
-        /// The user defined property.
-        /// </value>
-        [Category("iProperties")]
-        public string UserDefinedProperty
-        {
-            get => iProperties.UserDefined("UserDefinedProperty").ToString();
-            set => iProperties.UserDefined("UserDefinedProperty", value);
         }
 
         /// <summary>
@@ -112,5 +99,49 @@ namespace SelectionInfo
         /// The name of the file.
         /// </value>
         public string FileName => document.FullFileName;
+
+        [Category("iProperties")]
+        public string Ampacity
+        {
+            get => iProperties.UserDefined("Ampacity")?.ToString() ?? string.Empty;
+            set => iProperties.UserDefined("Ampacity", value);
+        }
+
+        [Category("iProperties")]
+        public string Mark
+        {
+            get => iProperties.UserDefined("Mark")?.ToString() ?? string.Empty;
+            set => iProperties.UserDefined("Mark", value);
+        }
+
+        [Category("iProperties")]
+        public string MFGNumber
+        {
+            get => iProperties.UserDefined("MFG Number")?.ToString() ?? string.Empty;
+            set => iProperties.UserDefined("MFG Number", value);
+            
+        }
+
+        [Category("iProperties")]
+        public string OperatingNumber
+        {
+            get => iProperties.UserDefined("Operating Number")?.ToString() ?? string.Empty;
+            set => iProperties.UserDefined("Operating Number", value);
+        }
+
+        [Category("iProperties")]
+        public string VoltageClass
+        {
+            get => iProperties.UserDefined("Voltage Class")?.ToString() ?? string.Empty;
+            set => iProperties.UserDefined("Voltage Class", value);
+        }
+
+        [Category("iProperties")]
+        public string PowerRating
+        {
+            get => iProperties.UserDefined("Power Rating")?.ToString() ?? string.Empty;
+            set => iProperties.UserDefined("Power Rating", value);
+        }
+
     }
 }
