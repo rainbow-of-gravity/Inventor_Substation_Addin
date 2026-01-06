@@ -1,7 +1,7 @@
 using System.ComponentModel;
 using Inventor;
 
-namespace SelectionInfo
+namespace SelectionInfo2
 {
     /// <summary>
     /// This class extends <see cref="DocumentInfo"/> with information specific to Inventor.ComponentOccurrence objects.
@@ -31,6 +31,33 @@ namespace SelectionInfo
         {
             get => occurrence.Name;
             set => occurrence.Name = value;
+        }
+
+        public string GetParentString(ComponentOccurrence occ)
+        {
+            if (occ == null)
+                return "<null>";
+
+            // Case 1: Parent is another occurrence (nested component)
+            if (occ.ParentOccurrence != null)
+            {
+                return occ.ParentOccurrence.Name;
+            }
+
+            // Case 2: Parent is the top-level assembly
+            if (occ.ParentOccurrence == null)
+            {
+                return "This is Top Level";
+            }
+
+            return "failure";
+        }
+
+        [Category("Occurrence")]
+        public string ParentName
+        {
+            get => GetParentString(occurrence);
+            //set => occurrence.Name = value;
         }
     }
 }

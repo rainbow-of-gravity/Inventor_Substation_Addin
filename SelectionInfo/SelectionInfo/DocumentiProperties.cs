@@ -1,7 +1,8 @@
-using System;
 using Inventor;
+using System;
+using System.Collections.Generic;
 
-namespace SelectionInfo
+namespace SelectionInfo2
 {
     /// <summary>
     /// Provides access to typical iProperties in an Inventor document.
@@ -11,7 +12,8 @@ namespace SelectionInfo
         public const string InventorSummaryInformation = "{F29F85E0-4FF9-1068-AB91-08002B27B3D9}";
         public const string InventorDocumentSummaryInformation = "{D5CDD502-2E9C-101B-9397-08002B2CF9AE}";
         public const string DesignTrackingProperties = "{32853F0F-3444-11D1-9E93-0060B03C1CA6}";
-        public const string InventorUserDefinedProperties = "{D5CDD505-2E9C-101B-9397-08002B2CF9AE}";
+        //public const string InventorUserDefinedProperties = "{D5CDD505-2E9C-101B-9397-08002B2CF9AE}";
+        public const string InventorUserDefinedProperties = "Inventor User Defined Properties";
         private readonly Document document;
 
         /// <summary>
@@ -398,7 +400,7 @@ namespace SelectionInfo
             }
             catch
             {
-                return "*** Not found ***";
+                return "*** No Field ***";
             }
             return userDefinedProperty.Value;
         }
@@ -412,6 +414,8 @@ namespace SelectionInfo
         {
             document.PropertySets[InventorUserDefinedProperties][name].Value = value;
         }
+
+
 
 
         #region Default iProperties
@@ -501,6 +505,7 @@ namespace SelectionInfo
 
         Property FlatPatternDeferUpdateProperty =>
             document.PropertySets[DesignTrackingProperties]["Flat Pattern Defer Update"];
+
 
         #endregion
     }
