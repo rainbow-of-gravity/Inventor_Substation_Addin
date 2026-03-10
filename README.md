@@ -1,4 +1,20 @@
-# Autodesk-Inventor
+# DMI Install Instructions
+## Step #1 - Download Files
+Download the release files from SelectionInfo/SelectionInfo/bin/Release
+
+## Step #2 - Place Files in Correct Location
+.dll file goes here ->     C:\Program Files\Autodesk\Inventor 2022\Bin  
+.addin file goes here  ->   C:\Users\[USER]\AppData\Roaming\Autodesk\Inventor 2022\Addins
+Update your the username in the above path though ^^^^^^^^^^^^
+ 
+## Step #3 - Start
+ Start Inventor
+
+## Step #4 - Set Keybinds
+To set the keybinds go to Tools > Customize > Then set the two commands "000 Go Down Hierarchy" and "000 Go Up Hierarchy" to whatever keybinds you want. I suggest "Alt + A" and "Alt + Q" respectively
+
+
+## Autodesk-Inventor (Vestigial Instructions - copied over from cloned repository)
 
 <b>Tools for Autodesk Inventor</b>
 
