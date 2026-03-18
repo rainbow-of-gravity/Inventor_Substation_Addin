@@ -1,10 +1,12 @@
 # DMI Install Instructions
 ## Step #1 - Download Files
-Download the release files from SelectionInfo/SelectionInfo/bin/Release
+Download the release files from [SelectionInfo/SelectionInfo/bin/Release](https://minhaskamal.github.io/DownGit/#/home?url=https://github.com/rainbow-of-gravity/Inventor_Substation_Addin/tree/master/SelectionInfo/SelectionInfo/bin/Release)
 
 ## Step #2 - Place Files in Correct Location
-.dll file goes here ->     C:\Program Files\Autodesk\Inventor 2022\Bin  
-.addin file goes here  ->   C:\Users\[USER]\AppData\Roaming\Autodesk\Inventor 2022\Addins
+.dll files goes here ->     C:\Program Files\Autodesk\Inventor 2022\Bin  
+NOTE: There are multiple .dll files, also if .stdole is already in this folder it is recommended to NOT REPLACE
+
+.addin file goes here  ->   C:\Users\\[USER]\AppData\Roaming\Autodesk\Inventor 2022\Addins
 Update your the username in the above path though ^^^^^^^^^^^^
  
 ## Step #3 - Start
@@ -13,7 +15,28 @@ Update your the username in the above path though ^^^^^^^^^^^^
 ## Step #4 - Set Keybinds
 To set the keybinds go to Tools > Customize > Then set the two commands "000 Go Down Hierarchy" and "000 Go Up Hierarchy" to whatever keybinds you want. I suggest "Alt + A" and "Alt + Q" respectively
 
+# HOW TO USE
+In a open assembly
+Add a new window pane by clicking the "+" at the top of the Document Tree Viewer and selection "Selection2"
+This creates a new window pane that can be moved around. When clicking on different parts ensure that cursor is in "Select Part Priority" mode (google how to do this).
+To go up and down use the buttons in the window ribbon - if the buttons are not there, keybinds can still be used. Google how to change keybinds in inventor
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# IGNORE BELOW!!!!!!!
 ## Autodesk-Inventor (Vestigial Instructions - copied over from cloned repository)
 
 <b>Tools for Autodesk Inventor</b>
