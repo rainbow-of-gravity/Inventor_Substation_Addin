@@ -6,6 +6,8 @@ using System.Windows.Forms;
 using static System.Net.Mime.MediaTypeNames;
 using System.Collections.Generic;
 using System.Linq;
+using Drawing = System.Drawing;
+
 
 namespace SelectionInfo2
 {
@@ -24,7 +26,7 @@ namespace SelectionInfo2
         private Inventor.Application inventor;
 
         private DockableWindow selectionInfoWnd;
-        private PropertyGrid selectionPropertyGrid;
+        private DataGridView selectionPropertyGrid;
         private UserInputEvents userInputEvents;
         ButtonDefinition goUpCmd;
         ButtonDefinition goDownCmd;
@@ -41,13 +43,40 @@ namespace SelectionInfo2
         /// <value>
         /// The selected object.
         /// </value>
+        private object _selectedObject;
         private object SelectedObject
         {
-            get => selectionPropertyGrid?.SelectedObject;
+            get => _selectedObject;
             set
             {
-                if (selectionPropertyGrid != null)
-                    selectionPropertyGrid.SelectedObject = value;
+                _selectedObject = value;
+                selectionPropertyGrid.Rows.Clear();
+
+                if (value == null) return;
+
+                // Get all iProperties dynamically
+                if (value is DocumentInfo docInfo)
+                {
+                    foreach (var kvp in docInfo.AlliProperties)
+                    {
+                        //string propertyName = kvp.Key;
+                        string propertyName = kvp.Key.Split('/').Last();
+
+                        selectionPropertyGrid.Rows.Add(propertyName, kvp.Value?.ToString());
+                    }
+                }
+                else
+                {
+                    // Fallback: use reflection for other entity types
+                    foreach (var prop in value.GetType().GetProperties())
+                    {
+                        try
+                        {
+                            selectionPropertyGrid.Rows.Add(prop.Name, prop.GetValue(value)?.ToString());
+                        }
+                        catch { }
+                    }
+                }
             }
         }
 
@@ -271,8 +300,17 @@ namespace SelectionInfo2
                 "SelectionInfo.StandardAddInServer.selectionInfoWnd", "Selection2");
             selectionInfoWnd.ShowVisibilityCheckBox = true;
 
-            //Create propertyGrid control
-            selectionPropertyGrid = new PropertyGrid();
+            // Create DataGridView control
+            selectionPropertyGrid = new DataGridView();
+            selectionPropertyGrid.Columns.Add("Property", "Property");
+            selectionPropertyGrid.Columns.Add("Value", "Value");
+            selectionPropertyGrid.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.AllCells;
+            selectionPropertyGrid.ReadOnly = true;
+            selectionPropertyGrid.AllowUserToAddRows = false;
+            selectionPropertyGrid.RowHeadersVisible = false;
+            selectionPropertyGrid.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+            selectionPropertyGrid.BackgroundColor = Drawing.Color.White;
+
 
             //Add propertyGrid to dockable window
             selectionInfoWnd.AddChild(selectionPropertyGrid.Handle);
@@ -300,25 +338,35 @@ namespace SelectionInfo2
             try
             {
                 goUpCmd = inventor.CommandManager.ControlDefinitions["GoUpHierarchy"] as ButtonDefinition;
+                Debug.WriteLine("GoUpHierarchy already exists, reusing.");
             }
-            catch (Exception ex) {
-                goUpCmd = inventor.CommandManager.ControlDefinitions.AddButtonDefinition("000 Go Up Hierarchy",
-                                                          "GoUpHierarchy",
-                                                          CommandTypesEnum.kEditMaskCmdType,
-                                                          ClientId,
-                                                          "Ribbon Demo",
-                                                          "SectionInfo Description",
-                                                          ButtonDisplayEnum.kDisplayTextInLearningMode);
+            catch
+            {
+                try
+                {
+                    goUpCmd = inventor.CommandManager.ControlDefinitions.AddButtonDefinition(
+                        "↑ Go Up Hierarchy",
+                        "GoUpHierarchy",
+                        CommandTypesEnum.kEditMaskCmdType,
+                        ClientId,
+                        "Go Up Hierarchy",
+                        "Navigate up to parent component",
+                        GetIconPath("up_16.png"),
+                        GetIconPath("up_32.png"),
+                        ButtonDisplayEnum.kDisplayTextInLearningMode);
+                    Debug.WriteLine("GoUpHierarchy created successfully.");
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Failed to create GoUpHierarchy: {ex.Message}");
+                }
             }
-            
 
             if (goUpCmd == null)
                 throw new InvalidOperationException("AddButtonDefinition did not return a ButtonDefinition");
 
             cmdCat.Add(goUpCmd);
-
             AddToRibbon(firstTime, goUpCmd);
-
             goUpCmd.OnExecute += new ButtonDefinitionSink_OnExecuteEventHandler(goUpCmd_OnExecute);
         }
         void goUpCmd_OnExecute(NameValueMap Context)
@@ -330,28 +378,36 @@ namespace SelectionInfo2
             try
             {
                 goDownCmd = inventor.CommandManager.ControlDefinitions["GoDownHierarchy"] as ButtonDefinition;
+                Debug.WriteLine("GoDownHierarchy already exists, reusing.");
             }
-            catch (Exception ex)
+            catch
             {
-                goDownCmd = inventor.CommandManager.ControlDefinitions.AddButtonDefinition("000 Go Down Hierarchy",
-                                                          "GoDownHierarchy",
-                                                          CommandTypesEnum.kEditMaskCmdType,
-                                                          ClientId,
-                                                          "Ribbon Demo2",
-                                                          "SectionInfo Description",
-                                                          ButtonDisplayEnum.kDisplayTextInLearningMode);
+                try
+                {
+                    goDownCmd = inventor.CommandManager.ControlDefinitions.AddButtonDefinition(
+                        "↓ Go Down Hierarchy",
+                        "GoDownHierarchy",
+                        CommandTypesEnum.kEditMaskCmdType,
+                        ClientId,
+                        "Go Down Hierarchy",
+                        "Navigate down to child component",
+                        GetIconPath("down_16.png"),
+                        GetIconPath("down_32.png"),
+                        ButtonDisplayEnum.kDisplayTextInLearningMode);
+                    Debug.WriteLine("GoDownHierarchy created successfully.");
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Failed to create GoDownHierarchy: {ex.Message}");
+                }
             }
-
 
             if (goDownCmd == null)
                 throw new InvalidOperationException("AddButtonDefinition did not return a ButtonDefinition");
 
             cmdCat.Add(goDownCmd);
-
             AddToRibbon(firstTime, goDownCmd);
-
             goDownCmd.OnExecute += new ButtonDefinitionSink_OnExecuteEventHandler(goDownCmd_OnExecute);
-            //MessageBox.Show("CreateButtonDefinition");
         }
         void goDownCmd_OnExecute(NameValueMap Context)
         {
@@ -370,39 +426,74 @@ namespace SelectionInfo2
                 return inventor.CommandManager.CommandCategories.Add(name, ClientId);
             }
         }
+        private stdole.IPictureDisp GetIconPath(string fileName)
+        {
+            string resourceName = $"SelectionInfo2.Icons.{fileName}";
+            var assembly = System.Reflection.Assembly.GetExecutingAssembly();
 
-        private void AddToRibbon(bool firstTime, ButtonDefinition buttonCommand) {
-            if (firstTime)
+            using (var stream = assembly.GetManifestResourceStream(resourceName))
             {
-                try
+                if (stream == null)
                 {
-                    if (inventor.UserInterfaceManager.InterfaceStyle == InterfaceStyleEnum.kRibbonInterface)
+                    Debug.WriteLine($"Resource not found: {resourceName}");
+                    // List all available resources to help diagnose
+                    foreach (var name in assembly.GetManifestResourceNames())
+                        Debug.WriteLine($"Available resource: {name}");
+                    return null;
+                }
+
+                var bitmap = new Drawing.Bitmap(stream);
+                return PictureConverter.ImageToIPictureDisp(bitmap);
+            }
+        }
+        internal class PictureConverter : System.Windows.Forms.AxHost
+        {
+            private PictureConverter() : base("59EE46BA-677D-4D20-BF10-8D8067CB8B33") { }
+
+            public static stdole.IPictureDisp ImageToIPictureDisp(Drawing.Image image)
+            {
+                return (stdole.IPictureDisp)GetIPictureDispFromPicture(image);
+            }
+        }
+
+        private void AddToRibbon(bool firstTime, ButtonDefinition buttonCommand)
+        {
+            try
+            {
+                if (inventor.UserInterfaceManager.InterfaceStyle == InterfaceStyleEnum.kRibbonInterface)
+                {
+                    Ribbon ribbon = inventor.UserInterfaceManager.Ribbons["Assembly"];
+                    RibbonTab tab = ribbon.RibbonTabs["id_TabAssemble"];
+
+                    RibbonPanel panel;
+                    try
                     {
-                        Ribbon ribbon = inventor.UserInterfaceManager.Ribbons["Assembly"];
-
-                        RibbonTab tab = ribbon.RibbonTabs["id_TabAssemble"];
-
-                        try
-                        {
-                            RibbonPanel panel = tab.RibbonPanels.Add("Section Info", "SelectionInfoPanel", ClientId, "", false);
-
-                            CommandControl control1 = panel.CommandControls.AddButton(buttonCommand, true, true, "", false);
-                        }
-                        catch (Exception ex)
-                        {
-                        }
+                        panel = tab.RibbonPanels["SelectionInfoPanel"];
                     }
-                    else
+                    catch
                     {
-                        CommandBar oCommandBar = inventor.UserInterfaceManager.CommandBars["PMxPartFeatureCmdBar"];
-                        oCommandBar.Controls.AddButton(buttonCommand);
+                        panel = tab.RibbonPanels.Add("Section Info", "SelectionInfoPanel", ClientId, "", false);
+                    }
+
+                    // Check if button already exists in panel before adding
+                    try
+                    {
+                        panel.CommandControls.AddButton(buttonCommand, true, true, "", false);
+                    }
+                    catch
+                    {
+                        Debug.WriteLine($"Button {buttonCommand.DisplayName} already exists in panel");
                     }
                 }
-                catch
+                else
                 {
                     CommandBar oCommandBar = inventor.UserInterfaceManager.CommandBars["PMxPartFeatureCmdBar"];
                     oCommandBar.Controls.AddButton(buttonCommand);
                 }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"AddToRibbon failed: {ex.Message}");
             }
         }
 
