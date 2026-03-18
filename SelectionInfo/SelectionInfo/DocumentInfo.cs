@@ -1,5 +1,6 @@
-using System.ComponentModel;
 using Inventor;
+using System.Collections.Generic;
+using System.ComponentModel;
 
 namespace SelectionInfo2
 {
@@ -142,6 +143,15 @@ namespace SelectionInfo2
             get => iProperties.UserDefined("Power Rating")?.ToString() ?? string.Empty;
             set => iProperties.UserDefined("Power Rating", value);
         }
+
+        [Category("iProperties")]
+        public string MFG_Type
+        {
+            get => iProperties.UserDefined("MFG (Type)")?.ToString() ?? string.Empty;
+            set => iProperties.UserDefined("MFG (Type)", value);
+        }
+
+        public Dictionary<string, object> AlliProperties => iProperties.GetAll();
 
     }
 }

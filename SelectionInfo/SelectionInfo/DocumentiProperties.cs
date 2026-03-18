@@ -415,7 +415,120 @@ namespace SelectionInfo2
             document.PropertySets[InventorUserDefinedProperties][name].Value = value;
         }
 
+        /// <summary>
+        /// Gets all iProperties from all property sets.
+        /// </summary>
+        /// <returns>A dictionary of "PropertySetName/PropertyName" -> value</returns>
+        public Dictionary<string, object> GetAll()
+        {
+            var excludedProperties = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "Thumbnail",
+                "Part Property Revision Id",
+                "Document Subtype",
+                "Document Subtype Name",
+                "Cost",
+                "External Property Revision Id",
+                "Mass",
+                "SurfaceArea",
+                "Volume",
+                "Density",
+                "Valid MassProps",
+                "Flat Pattern Width",
+                "Flat Pattern Area",
+                "Material",
+                "Language",
+                "Size Designation",
+                "Categories",
+                "Material Identifier",
+                "Appearance",
+                "FamilyId",
+                "Family Revision",
+                "Family Revision Time",
+                "Family Folder",
+                "Member Revision",
+                "Subject",
+                "Keywords",
+                "Comments",
+                "Last Saved By",
+                "Revision Number",
+                "Manager",
+                "Company",
+                "Creation Time",
+                "Project",
+                "Cost Center",
+                "Checked By",
+                "Date Checked",
+                "Engr Approved By",
+                "Engr Date Approved",
+                "Title",
+                "User Status",
+                "Catalog Web Link",
+                "Part Icon",
+                "Description",
+                "Proxy Refresh Date",
+                "Mfg Approved By",
+                "Mfg Date Approved",
+                "Standard",
+                "Design Status",
+                "Engineer",
+                "Authority",
+                "Parameterized Template",
+                "Template Row",
+                "Standard Revision",
+                "Manufacturer",
+                "Standards Organization",
+                "Defer Updates",
+                "Stock Number",
+                "Weld Material",
+                "Flat Pattern Length",
+                "Sheet Metal Rule",
+                "Last Updated With",
+                "Flat Pattern Defer Update",
+                "Sheet Metal Width",
+                "Sheet Metal Length",
+                "Sheet Metal Area",
+                "Component Type",
+                "Family",
+                "Member",
+                "MemberId",
+                "Member FileName",
+                "Ampacity",
+                "IsCustomPart",
+            };
+            var result = new Dictionary<string, object>();
+            var userDefinedEntries = new SortedDictionary<string, object>();
 
+            foreach (PropertySet propSet in document.PropertySets)
+            {
+                bool isUserDefined = propSet.Name == InventorUserDefinedProperties;
+
+                foreach (Property prop in propSet)
+                {
+                    try
+                    {
+                        if (excludedProperties.Contains(prop.Name) && !isUserDefined)
+                            continue;
+
+                        var value = prop.Value;
+
+                        string key = $"{propSet.Name}/{prop.Name}";
+
+                        if (isUserDefined)
+                            userDefinedEntries[key] = value;
+                        else
+                            result[key] = value;
+                    }
+                    catch { }
+                }
+            }
+
+            // Add user defined properties at the end in alphabetical order
+            foreach (var kvp in userDefinedEntries)
+                result[kvp.Key] = kvp.Value;
+
+            return result;
+        }
 
 
         #region Default iProperties
